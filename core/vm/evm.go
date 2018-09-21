@@ -17,12 +17,14 @@
 package vm
 
 import (
+	"encoding/hex"
 	"math/big"
 	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -421,6 +423,7 @@ func (evm *EVM) create(caller ContractRef, code []byte, gas uint64, value *big.I
 
 // Create creates a new contract using code as deployment code.
 func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
+	log.Info("Calling CREATE")
 	contractAddr = crypto.CreateAddress(caller.Address(), evm.StateDB.GetNonce(caller.Address()))
 	return evm.create(caller, code, gas, value, contractAddr)
 }
@@ -431,7 +434,10 @@ func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.I
 // instead of the usual sender-and-nonce-hash as the address where the contract is initialized at.
 func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *big.Int, salt *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	contractAddr = crypto.CreateAddress2(caller.Address(), common.BigToHash(salt), code)
-	return evm.create(caller, code, gas, endowment, contractAddr)
+	ret1, contractAddr1, leftOverGas1, err1 := evm.create(caller, code, gas, endowment, contractAddr)
+	log.Info("Calling CREATE2 code=", hex.EncodeToString(code))
+	log.Info("Calling CREATE2 contractAddr=", contractAddr.Hex(), " ret1=", hex.EncodeToString(ret1), " contractAddr1=", contractAddr1.Hex(), " leftOverGas1=", leftOverGas1, " err1=", err1)
+	return ret1, contractAddr1, leftOverGas1, err1
 }
 
 // ChainConfig returns the environment's chain configuration
